@@ -1,26 +1,31 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import BlogPost from '../../components/BlogPost.astro'
 
 export async function getStaticPaths() {
+  // 配列（全投稿データ）：すべての投稿データを配列で取得
   const allPosts = await Astro.glob('../posts/*.md')
-
-  return [
-    { params: { tag: "astro" }, props: {posts: allPosts} },
-    { params: { tag: "successes" }, props: {posts: allPosts} },
-    { params: { tag: "community" }, props: {posts: allPosts} },
-    { params: { tag: "blogging" }, props: {posts: allPosts} },
-    { params: { tag: "setbacks" }, props: {posts: allPosts} },
-    { params: { tag: "learning in public" }, props: {posts: allPosts} },
-  ]
+  // 配列（すべてのタグ）：すべての投稿データからタグを取得して、重複のない配列として取り出す 
+  const uniqueTags = [...new Set(allPosts.map(post => post.frontmatter.tags).flat())]
+ 
+  // params：パスに使用する文字列にtagを利用
+  // props：タグに合致する投稿の配列データをpropsで出力
+  return uniqueTags.map(tag => {
+    // 配列（タグに該当する投稿のデータ）：そのページのタグに一致するタグを持つ投稿データだけを取り出す
+    const filteredPosts = allPosts.filter(post => post.frontmatter.tags.includes(tag))
+    return {
+      params: { tag },
+      props: { posts: filteredPosts }
+    }
+  })
 }
 
 const { tag } = Astro.params
 const { posts } = Astro.props
-const filteredPosts = posts.filter((post) => post.frontmatter.tags.includes(tag))
 ---
 <BaseLayout pageTitle={tag}>
   <p>Posts tagged with {tag}</p>
   <ul>
-{filteredPosts.map((post) => <li><a href={post.url}>{post.frontmatter.title}</a></li>)}
+    {posts.map(post => <BlogPost title={post.frontmatter.title} url={post.url} />)}
   </ul>
 </BaseLayout>
